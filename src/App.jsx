@@ -10,10 +10,16 @@ const App = () => {
   // This state will store the parsed data
   const [data, setData] = useState([]);
 
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+
   const [tableData, setTableData] = useState([
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
   ]);
-
+  const [curTableData, setCurTableData] = useState([
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
+  ]);
 
   var parsedData = [
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
@@ -64,16 +70,39 @@ const App = () => {
       parsedData = csv?.data;
       setTableData(parsedData)
       const columns = Object.keys(parsedData[0]);
+      isInDateRange("2022-05-13")
       //console.log(columns)
       //setData(columns);
     };
     reader.readAsText(file);
   };
+  function isInDateRange(date) {
+    var curDate = new Date(date)
+    var start = new Date(startDate)
+    var end = new Date(endDate)
+    return curDate >= start && curDate <= end;
+  }
 
   const updateTableContent = () => {
     console.log(parsedData)
-    setTableData(parsedData)
+    var newTableData = []
+    for (let i = 0; i < tableData.length; i++) {
+      if (isInDateRange(tableData[i])) {
+        newTableData.push(tableData[i])
+      }
+    }
+    setCurTableData(newTableData)
   }
+
+  const updateStartDate = event => {
+    setStartDate(event.target.value)
+    console.log(event.target.value)
+  }
+  const updateEndDate = event => {
+    setEndDate(event.target.value)
+    console.log(event.target.value)
+  }
+
   function Table() {
     return (
       <div className="App">
@@ -125,6 +154,8 @@ const App = () => {
             idx) => <div key={idx}>{col}</div>)}
         </div>
       </div>
+      <input type="date" onChange={updateStartDate} value={startDate}></input>
+      <input type="date" onChange={updateEndDate} value={endDate}></input>
       <button onClick={updateTableContent}>Refresh</button>
       <Table data={parsedData} />
     </>
