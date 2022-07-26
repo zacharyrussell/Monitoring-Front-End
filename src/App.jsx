@@ -3,8 +3,8 @@ import Papa from "papaparse";
 import Table from "./components/table";
 import "./App.css"
 import { useEffect } from "react";
-import {doSearch} from "./SearchPDF"
-import tika from "node-tika"
+// import { doSearch } from "./SearchPDF"
+// import tika from "node-tika"
 
 
 // Allowed extensions for input file
@@ -17,17 +17,23 @@ const App = () => {
 
   const [startDate, setStartDate] = useState('2022-01-01');
   const [endDate, setEndDate] = useState('2022-07-06');
+  const [searchText, setSearchText] = useState('');
 
 
   const [tableData, setTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
   ]);
   const [curTableData, setCurTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
+  ]);
+  const [curSearchTableData, setCurSearchTableData] = useState([
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
   ]);
 
+
+
   var parsedData = [
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
   ];
   // It state will contain the error when
   // correct file extension is not used
@@ -75,17 +81,18 @@ const App = () => {
       parsedData = csv?.data;
       setTableData(parsedData)
       setCurTableData(parsedData)
+      setCurSearchTableData(parsedData)
       const columns = Object.keys(parsedData[0]);
+      console.log(parsedData[1])
+      // var options = {
 
-      var options = {
- 
-        // Hint the content-type. This is optional but would help Tika choose a parser in some cases.
-        contentType: 'application/pdf'
-    };
-     var PDF_URL = 'https://www.austintexas.gov/edims/document.cfm?id=383785';
-      tika.text(PDF_URL, function(err, text) {
-      console.log(text)
-      });
+      //   // Hint the content-type. This is optional but would help Tika choose a parser in some cases.
+      //   contentType: 'application/pdf'
+      // };
+      // var PDF_URL = 'https://www.austintexas.gov/edims/document.cfm?id=383785';
+      // tika.text(PDF_URL, function (err, text) {
+      //   console.log(text)
+      // });
       // pdfparse(pdffile).then(function(data){
       //   console.log(data.numpages)
       // })
@@ -95,7 +102,7 @@ const App = () => {
     reader.readAsText(file);
   };
   function isInDateRange(date) {
-    var formatDate = date.substring(0,4) + "-" + date.substring(4,6) + "-" + date.substring(6)
+    var formatDate = date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6)
     var curDate = new Date(formatDate)
     var start = new Date(startDate)
     var end = new Date(endDate)
@@ -104,9 +111,9 @@ const App = () => {
 
   const updateTableContent = () => {
     var newTableData = []
-    for (let i = 0; i < tableData.length; i++) {
-      if (isInDateRange(tableData[i].Date)) {
-        newTableData.push(tableData[i])
+    for (let i = 0; i < curSearchTableData.length; i++) {
+      if (isInDateRange(curSearchTableData[i].Date)) {
+        newTableData.push(curSearchTableData[i])
       }
     }
     setCurTableData(newTableData)
@@ -116,6 +123,24 @@ const App = () => {
     setStartDate(event.target.value)
   }
 
+  function containsWord(keywords) {
+    return keywords.includes(searchText)
+  }
+
+  const updateTableResults = () => {
+    var newTableData = []
+    for (let i = 0; i < tableData.length - 1; i++) {
+      if (containsWord(tableData[i].Keywords)) {
+        newTableData.push(tableData[i])
+      }
+    }
+    setCurSearchTableData(newTableData)
+    setCurTableData(newTableData)
+  }
+
+  const updateSearchText = event => {
+    setSearchText(event.target.value)
+  }
   const updateEndDate = event => {
     setEndDate(event.target.value)
   }
@@ -129,36 +154,36 @@ const App = () => {
     return (
       <div className="table">
         <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Location</th>
-            <th>Meeting</th>
-            <th>Doc Title</th>
-            <th>PDF</th>
-            <th>Video</th>
-          </tr>
-          {curTableData.map((val, key) => {
-            return (
-              <tr key={key}>
-                <td>{val.Date}</td>
-                <td>{val.Location}</td>
-                <td>{val.Meeting}</td>
-                <td>{val.DocTitle}</td>
-                <td>
-                  <a href={val.PDF}>
-                    <div>PDF</div>
-                  </a>
-                </td>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Meeting</th>
+              <th>Doc Title</th>
+              <th>PDF</th>
+              <th>Video</th>
+            </tr>
+            {curTableData.map((val, key) => {
+              return (
+                <tr key={key}>
+                  <td>{val.Date}</td>
+                  <td>{val.Location}</td>
+                  <td>{val.Meeting}</td>
+                  <td>{val.DocTitle}</td>
+                  <td>
+                    <a href={val.PDF}>
+                      <div>PDF</div>
+                    </a>
+                  </td>
 
-                <td>
-                  <a href={val.Link}>
-                    <div>link</div>
-                  </a>
-                </td>
-              </tr>
-            )
-          })}
+                  <td>
+                    <a href={val.Link}>
+                      <div>link</div>
+                    </a>
+                  </td>
+                </tr>
+              )
+            })}
           </thead>
         </table>
       </div>
@@ -185,9 +210,10 @@ const App = () => {
             idx) => <div key={idx}>{col}</div>)}
         </div>
       </div>
+      <button onClick={updateTableResults}>Search</button>
+      <input type="text" onChange={updateSearchText} value={searchText}></input>
       <input type="date" onChange={updateStartDate} value={startDate}></input>
       <input type="date" onChange={updateEndDate} value={endDate}></input>
-      <button onClick={updateTableContent}>Refresh</button>
       <Table data={parsedData} />
     </>
   );
