@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import Papa from "papaparse";
 import Table from "./components/table";
+import "./App.css"
+import { useEffect } from "react";
+import {doSearch} from "./SearchPDF"
+import tika from "node-tika"
+
 
 // Allowed extensions for input file
 const allowedExtensions = ["csv"];
@@ -10,8 +15,8 @@ const App = () => {
   // This state will store the parsed data
   const [data, setData] = useState([]);
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState('2022-01-01');
+  const [endDate, setEndDate] = useState('2022-07-06');
 
 
   const [tableData, setTableData] = useState([
@@ -69,25 +74,38 @@ const App = () => {
       const csv = Papa.parse(target.result, { header: true });
       parsedData = csv?.data;
       setTableData(parsedData)
+      setCurTableData(parsedData)
       const columns = Object.keys(parsedData[0]);
-      isInDateRange("2022-05-13")
+
+      var options = {
+ 
+        // Hint the content-type. This is optional but would help Tika choose a parser in some cases.
+        contentType: 'application/pdf'
+    };
+     var PDF_URL = 'https://www.austintexas.gov/edims/document.cfm?id=383785';
+      tika.text(PDF_URL, function(err, text) {
+      console.log(text)
+      });
+      // pdfparse(pdffile).then(function(data){
+      //   console.log(data.numpages)
+      // })
       //console.log(columns)
       //setData(columns);
     };
     reader.readAsText(file);
   };
   function isInDateRange(date) {
-    var curDate = new Date(date)
+    var formatDate = date.substring(0,4) + "-" + date.substring(4,6) + "-" + date.substring(6)
+    var curDate = new Date(formatDate)
     var start = new Date(startDate)
     var end = new Date(endDate)
     return curDate >= start && curDate <= end;
   }
 
   const updateTableContent = () => {
-    console.log(parsedData)
     var newTableData = []
     for (let i = 0; i < tableData.length; i++) {
-      if (isInDateRange(tableData[i])) {
+      if (isInDateRange(tableData[i].Date)) {
         newTableData.push(tableData[i])
       }
     }
@@ -96,17 +114,22 @@ const App = () => {
 
   const updateStartDate = event => {
     setStartDate(event.target.value)
-    console.log(event.target.value)
   }
+
   const updateEndDate = event => {
     setEndDate(event.target.value)
-    console.log(event.target.value)
   }
+
+
+  useEffect(() => {
+    updateTableContent();
+  }, [endDate, startDate]);
 
   function Table() {
     return (
-      <div className="App">
+      <div className="table">
         <table>
+        <thead>
           <tr>
             <th>Date</th>
             <th>Location</th>
@@ -114,21 +137,29 @@ const App = () => {
             <th>Doc Title</th>
             <th>PDF</th>
             <th>Video</th>
-            <th>Video Link</th>
           </tr>
-          {tableData.map((val, key) => {
+          {curTableData.map((val, key) => {
             return (
               <tr key={key}>
                 <td>{val.Date}</td>
                 <td>{val.Location}</td>
                 <td>{val.Meeting}</td>
                 <td>{val.DocTitle}</td>
-                <td>{val.PDF}</td>
-                <td>{val.Video}</td>
-                <td>{val.Link}</td>
+                <td>
+                  <a href={val.PDF}>
+                    <div>PDF</div>
+                  </a>
+                </td>
+
+                <td>
+                  <a href={val.Link}>
+                    <div>link</div>
+                  </a>
+                </td>
               </tr>
             )
           })}
+          </thead>
         </table>
       </div>
     );
