@@ -1,8 +1,7 @@
 #root {
-  max-width: 1280px;
+  width: auto;
   margin: 0;
   padding: 2rem;
-  text-align: center;
 }
 
 .table th {
@@ -16,13 +15,18 @@
   text-overflow: ellipsis;
 }
 
+.table td:nth-child(1) {
+  width: 200px;
+}
+
+
 .table td {
   white-space: nowrap;
   padding: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 400px;
-
+  max-width: 500px;
+  min-width: 100px;
 }
 
 .table tr:nth-child(odd) {
@@ -30,55 +34,94 @@
 }
 
 .table {
-  display: flex;
-  text-overflow: ellipsis;
-  font-family: Arial, Helvetica, sans-serif;
-  text-align: left;
-  padding-right: 100px;
-  margin-left: auto;
-  margin-right: auto;
+  width: auto;
+  text-align: center
 }
 
 table {
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: left;
   border-collapse: collapse;
-  margin-left: auto;
-  margin-right: auto;
+  margin: auto;
+  display: inline-table;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
+.input>label {
+  font-size: 2em;
 }
 
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.Search>input {
+  padding-right: 30px;
+  height: 40px;
+  width: 200px;
 }
 
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.Tools {
+  text-align: center;
+  width: auto;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+.End {
+  float: left;
+  display: block;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.City>select {
+  width: 200px;
+  height: 34px;
+  text-align: center;
 }
 
-.card {
-  padding: 2em;
+
+.City {
+  float: right;
+  display: block;
+  width: 200px;
 }
 
-.read-the-docs {
-  color: #888;
+.Start {
+  float: left;
+  display: block;
+}
+
+.Dates {
+  display: inline-block
+}
+
+.End>input,
+.Start>input,
+.City>select {
+  font-size: 1.5em;
+  margin: 0px 10px 0px 10px;
+}
+
+.Search {
+  margin: 0px 0px 20px 100px;
+  display: inline-block;
+  text-align: center;
+}
+
+.Start>h3,
+.End>h3,
+.City>h3 {
+  background-color: #384464;
+  color: white;
+}
+
+.input input {
+  font-size: 1.5em;
+  margin: 20px;
+}
+
+.input>div>button {
+  width: 500px;
+}
+
+.input {
+  text-align: center;
+  padding: 100px;
+}
+
+.Link {
+  transform: rotate(45deg);
 }

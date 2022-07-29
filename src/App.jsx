@@ -1,11 +1,37 @@
 import React, { useState } from "react";
 import Papa from "papaparse";
-import Table from "./components/table";
+// import Table from "./components/table";
 import "./App.css"
+import '@fortawesome/fontawesome-free/js/all.js';
 import { useEffect } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faRandom } from '@fortawesome/free-solid-svg-icons'
 // import { doSearch } from "./SearchPDF"
 // import tika from "node-tika"
 
+
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDSWi8teKhljadePNuQWN9WFn2Lbx1QuE4",
+  authDomain: "agenda-monitoring.firebaseapp.com",
+  projectId: "agenda-monitoring",
+  storageBucket: "agenda-monitoring.appspot.com",
+  messagingSenderId: "367635128406",
+  appId: "1:367635128406:web:3debe8eabc78750ff11bf7",
+  measurementId: "G-WYXCHMLTJ6"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // Allowed extensions for input file
 const allowedExtensions = ["csv"];
@@ -14,7 +40,6 @@ const App = () => {
 
   // This state will store the parsed data
   const [data, setData] = useState([]);
-
   const [startDate, setStartDate] = useState('2022-01-01');
   const [endDate, setEndDate] = useState('2022-07-06');
   const [searchText, setSearchText] = useState('');
@@ -30,8 +55,7 @@ const App = () => {
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
   ]);
 
-
-
+  const [curCities, setCurCities] = useState([{ City: "" }])
   var parsedData = [
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
   ];
@@ -83,21 +107,6 @@ const App = () => {
       setCurTableData(parsedData)
       setCurSearchTableData(parsedData)
       const columns = Object.keys(parsedData[0]);
-      console.log(parsedData[1])
-      // var options = {
-
-      //   // Hint the content-type. This is optional but would help Tika choose a parser in some cases.
-      //   contentType: 'application/pdf'
-      // };
-      // var PDF_URL = 'https://www.austintexas.gov/edims/document.cfm?id=383785';
-      // tika.text(PDF_URL, function (err, text) {
-      //   console.log(text)
-      // });
-      // pdfparse(pdffile).then(function(data){
-      //   console.log(data.numpages)
-      // })
-      //console.log(columns)
-      //setData(columns);
     };
     reader.readAsText(file);
   };
@@ -106,16 +115,22 @@ const App = () => {
     var curDate = new Date(formatDate)
     var start = new Date(startDate)
     var end = new Date(endDate)
+
     return curDate >= start && curDate <= end;
   }
 
   const updateTableContent = () => {
     var newTableData = []
+    var cities = []
     for (let i = 0; i < curSearchTableData.length; i++) {
       if (isInDateRange(curSearchTableData[i].Date)) {
         newTableData.push(curSearchTableData[i])
+        if (!cities.includes(curSearchTableData[i].Location)) {
+          cities.push(curSearchTableData[i].Location)
+        }
       }
     }
+    setCurCities(cities)
     setCurTableData(newTableData)
   }
 
@@ -144,6 +159,28 @@ const App = () => {
   const updateEndDate = event => {
     setEndDate(event.target.value)
   }
+  const handleKeyDown = event => {
+    if (event.key === 'Enter') {
+      updateTableResults()
+    }
+  }
+
+  function formatDate(date) {
+    var year = date.substring(0, 4)
+    var month = date.substring(4, 6)
+    var day = date.substring(6)
+    return month + "/" + day + "/" + year
+  }
+
+  function videoColDisplay(link) {
+    if (link == "None") {
+      return ""
+    }
+    else {
+      return <FontAwesomeIcon className="Link" icon="fa-solid fa-link" />
+    }
+  }
+
 
 
   useEffect(() => {
@@ -160,25 +197,23 @@ const App = () => {
               <th>Location</th>
               <th>Meeting</th>
               <th>Doc Title</th>
-              <th>PDF</th>
               <th>Video</th>
             </tr>
             {curTableData.map((val, key) => {
               return (
                 <tr key={key}>
-                  <td>{val.Date}</td>
+                  <td>{formatDate(val.Date)}</td>
                   <td>{val.Location}</td>
                   <td>{val.Meeting}</td>
-                  <td>{val.DocTitle}</td>
                   <td>
                     <a href={val.PDF}>
-                      <div>PDF</div>
+                      <div>{val.DocTitle}</div>
                     </a>
                   </td>
 
                   <td>
                     <a href={val.Link}>
-                      <div>link</div>
+                      <div>{videoColDisplay(val.Link)}</div>
                     </a>
                   </td>
                 </tr>
@@ -192,7 +227,7 @@ const App = () => {
 
   return (
     <>
-      <div>
+      <div className="input">
         <label htmlFor="csvInput" style={{ display: "block" }}>
           Enter CSV File
         </label>
@@ -210,10 +245,30 @@ const App = () => {
             idx) => <div key={idx}>{col}</div>)}
         </div>
       </div>
-      <button onClick={updateTableResults}>Search</button>
-      <input type="text" onChange={updateSearchText} value={searchText}></input>
-      <input type="date" onChange={updateStartDate} value={startDate}></input>
-      <input type="date" onChange={updateEndDate} value={endDate}></input>
+
+      <div className="Tools">
+        <div className="Dates">
+          <div className="Start">
+            <h3>Start</h3>
+            <input type="date" onChange={updateStartDate} value={startDate}></input>
+          </div>
+          <div className="End">
+            <h3>End</h3>
+            <input type="date" onChange={updateEndDate} value={endDate}></input>
+          </div>
+          <div className="City">
+            <h3>Location</h3>
+            <select id="cars" name="cars">
+              <option>Austin</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="Search">
+          <input type="text" onChange={updateSearchText} value={searchText} onKeyDown={handleKeyDown} placeholder="Search for Keywords"></input>
+          <button onClick={updateTableResults}><FontAwesomeIcon icon="fa-solid fa-magnifying-glass" /></button>
+        </div>
+      </div>
       <Table data={parsedData} />
     </>
   );
