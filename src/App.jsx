@@ -44,20 +44,20 @@ const App = () => {
   const [endDate, setEndDate] = useState('2022-07-06');
   const [searchText, setSearchText] = useState('');
 
-
+  // Date,Location,Meeting,DocTitle,PDF,Link,Keywords
   const [tableData, setTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ]);
   const [curTableData, setCurTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ]);
   const [curSearchTableData, setCurSearchTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ]);
 
   const [curCities, setCurCities] = useState([{ City: "" }])
   var parsedData = [
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Video: "", Link: "", Keywords: "" },
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ];
   // It state will contain the error when
   // correct file extension is not used
@@ -173,6 +173,7 @@ const App = () => {
   }
 
   function videoColDisplay(link) {
+    console.log(link)
     if (link == "None") {
       return ""
     }
