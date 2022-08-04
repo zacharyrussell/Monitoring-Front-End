@@ -32,7 +32,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-
+var executed = false;
 // Allowed extensions for input file
 const allowedExtensions = ["csv"];
 
@@ -43,20 +43,31 @@ const App = () => {
   const [startDate, setStartDate] = useState('2022-01-01');
   const [endDate, setEndDate] = useState('2022-07-06');
   const [searchText, setSearchText] = useState('');
+  const [previewText, setPreviewText] = useState('');
+  // executed = false
+  useEffect(() => {
+
+    query()
+  }, []);
+  // if (!executed) {
+  //   query()
+  //   console.log("A")
+  //   executed = true
+  // }
 
   // Date,Location,Meeting,DocTitle,PDF,Link,Keywords
   const [tableData, setTableData] = useState([
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ]);
   const [curTableData, setCurTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
+    { id: "", date: "", doctitle: "", keywords: "", location: "", meeting: "", pdf: "", link: "", wholeText: "" },
   ]);
   const [curSearchTableData, setCurSearchTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
+    { id: "", date: "", doctitle: "", keywords: "", location: "", meeting: "", pdf: "", link: "", wholeText: "" },
   ]);
 
   const [curQueryTableData, setCurQueryTableData] = useState([
-    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", WholeText: "", Keywords: ""},
+    { id: "", date: "", doctitle: "", keywords: "", location: "", meeting: "", pdf: "", link: "", wholeText: "" },
   ]);
 
   const [curCities, setCurCities] = useState([{ City: "" }])
@@ -107,7 +118,7 @@ const App = () => {
     reader.onload = async ({ target }) => {
       const csv = Papa.parse(target.result, { header: true });
       parsedData = csv?.data;
-      query()
+
       setTableData(parsedData)
       setCurTableData(parsedData)
       setCurSearchTableData(parsedData)
@@ -115,7 +126,8 @@ const App = () => {
     };
     reader.readAsText(file);
   };
-  function isInDateRange(date) {
+  function isInDateRange(dateNum) {
+    var date = dateNum.toString()
     var formatDate = date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6)
     var curDate = new Date(formatDate)
     var start = new Date(startDate)
@@ -128,11 +140,8 @@ const App = () => {
     var newTableData = []
     var cities = []
     for (let i = 0; i < curSearchTableData.length; i++) {
-      if (isInDateRange(curSearchTableData[i].Date)) {
+      if (isInDateRange(curSearchTableData[i].date)) {
         newTableData.push(curSearchTableData[i])
-        if (!cities.includes(curSearchTableData[i].Location)) {
-          cities.push(curSearchTableData[i].Location)
-        }
       }
     }
     setCurCities(cities)
@@ -149,9 +158,10 @@ const App = () => {
 
   const updateTableResults = () => {
     var newTableData = []
-    for (let i = 0; i < tableData.length - 1; i++) {
-      if (containsWord(tableData[i].Keywords)) {
-        newTableData.push(tableData[i])
+
+    for (let i = 0; i < curQueryTableData.length - 1; i++) {
+      if (containsWord(curQueryTableData[i].keywords)) {
+        newTableData.push(curQueryTableData[i])
       }
     }
     setCurSearchTableData(newTableData)
@@ -170,36 +180,43 @@ const App = () => {
     }
   }
 
-  function formatDate(date) {
+  function formatDate(dateNum) {
+    var date = dateNum.toString()
     var year = date.substring(0, 4)
     var month = date.substring(4, 6)
     var day = date.substring(6)
     return month + "/" + day + "/" + year
   }
 
-  function query(){
-    console.log("Running Query")
+
+  function advQuery() {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     myHeaders.append("Authorization", "Basic emFjaDpwaG9iaWNoaXBwbzQzMQ==");
 
+    var start = parseInt(startDate.split('-').join(''));
+    var end = parseInt(endDate.split('-').join(''));
+
     var raw = JSON.stringify({
-        "operation": "search_by_value",
-        "schema": "dev",
-        "table": "agendas",
-        "search_attribute": "date",
-        "search_value": "*",
-        "get_attributes": [
-            "id",
-            "date",
-            "doctitle",
-            "keywords",
-            "link",
-            "location",
-            "meeting",
-            "pdf",
-            "wholeText"
-        ]
+      "operation": "search_by_conditions",
+      "schema": "dev",
+      "table": "agendas",
+      "operator": "and",
+      "offset": 0,
+      "limit": 30,
+      "get_attributes": [
+        "*"
+      ],
+      "conditions": [
+        {
+          "search_attribute": "date",
+          "search_type": "between",
+          "search_value": [
+            start,
+            end
+          ]
+        }
+      ]
     });
 
     var requestOptions = {
@@ -208,12 +225,67 @@ const App = () => {
       body: raw,
       redirect: 'follow'
     };
-    console.log("Fetching")
+
     fetch("https://agenda-1-agendas.harperdbcloud.com", requestOptions)
       .then(response => response.text())
-      .then(result => console.log(result))
+      .then(result => {
+        var arr = JSON.parse(result)
+        setCurQueryTableData(arr)
+        setCurTableData(arr)
+        setCurSearchTableData(arr)
+        if (curQueryTableData[0].date) {
+          updateTableResults()
+        }
+      }
+      )
       .catch(error => console.log('error', error));
-    console.log("Finished")
+  }
+
+
+  function query() {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Basic emFjaDpwaG9iaWNoaXBwbzQzMQ==");
+
+    var raw = JSON.stringify({
+      "operation": "search_by_value",
+      "schema": "dev",
+      "table": "agendas",
+      "search_attribute": "date",
+      "search_value": "*",
+      "get_attributes": [
+        "id",
+        "date",
+        "doctitle",
+        "keywords",
+        "link",
+        "location",
+        "meeting",
+        "pdf",
+        "wholeText"
+      ]
+    });
+
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    fetch("https://agenda-1-agendas.harperdbcloud.com", requestOptions)
+      .then(response => response.text())
+      .then(result => {
+        var arr = JSON.parse(result)
+        setCurQueryTableData(arr)
+        setCurTableData(arr)
+        setCurSearchTableData(arr)
+        if (curQueryTableData[0].date) {
+          updateTableResults()
+        }
+      })
+      .catch(error => console.log('error', error));
+
     // setCurQueryTableData(JSON.parse(result))
     // const arr = JSON.parse(result)
     // console.log(curQueryTableData)
@@ -227,15 +299,69 @@ const App = () => {
       return <FontAwesomeIcon className="Link" icon="fa-solid fa-link" />
     }
   }
+  function findParagraph(text) {
+    var test = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    var index = text.indexOf(searchText)
+    console.log(index)
+    // console.log(text)
+    var before = text.substring(index - 100, index);
+    var word = text.substring(index, index + searchText.length);
+    var after = text.substring(index + searchText.length, index + 100);
+    var sample = before + <b>word</b> + after
+    console.log(sample)
+    return (
+      <>
+        <p>{before}<b>{word}</b>{after}</p>
+      </>
+    )
+    setPreviewText(sample)
+  }
+  function getPreview(meeting) {
+    previewQuery(meeting.wholeText)
+  }
 
+  function previewQuery(id) {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Basic emFjaDpwaG9iaWNoaXBwbzQzMQ==");
 
+    var raw = JSON.stringify({
+      "operation": "search_by_value",
+      "schema": "dev",
+      "table": "wholeText",
+      "search_attribute": "id",
+      "search_value": id,
+      "get_attributes": [
+        "id",
+        "wholeText"
+      ]
+    });
+
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    fetch("https://agenda-1-agendas.harperdbcloud.com", requestOptions)
+      .then(response => response.text())
+      .then(result => {
+        var arr = JSON.parse(result)
+        // console.log(arr[0].wholeText)
+        findParagraph(arr[0].wholeText)
+        return arr[1]
+      })
+      .catch(error => console.log('error', error));
+
+  }
 
   useEffect(() => {
     updateTableContent();
   }, [endDate, startDate]);
 
   function Table() {
-    return (
+    return (<>
       <div className="table">
         <table>
           <thead>
@@ -245,23 +371,29 @@ const App = () => {
               <th>Meeting</th>
               <th>Doc Title</th>
               <th>Video</th>
+              <th>Preview</th>
             </tr>
             {curTableData.map((val, key) => {
               return (
                 <tr key={key}>
-                  <td>{formatDate(val.Date)}</td>
-                  <td>{val.Location}</td>
-                  <td>{val.Meeting}</td>
+                  <td>{formatDate(val.date)}</td>
+                  <td>{val.location}</td>
+                  <td>{val.meeting}</td>
                   <td>
-                    <a href={val.PDF}>
-                      <div>{val.DocTitle}</div>
+                    <a href={val.pdf}>
+                      <div>{val.doctitle}</div>
                     </a>
                   </td>
 
                   <td>
-                    <a href={val.Link}>
-                      <div>{videoColDisplay(val.Link)}</div>
+                    <a href={val.link}>
+                      <div>{videoColDisplay(val.link)}</div>
                     </a>
+                  </td>
+                  <td>
+                    <button onClick={() => getPreview(val)}>
+                      Preview
+                    </button>
                   </td>
                 </tr>
               )
@@ -269,12 +401,18 @@ const App = () => {
           </thead>
         </table>
       </div>
+    </>
     );
+
   }
 
   return (
     <>
-      <div className="input">
+      <div className="PreviewBox">
+        <h3>Preview</h3>
+        <p value={previewText}>{previewText}</p>
+      </div>
+      {/* <div className="input">
         <label htmlFor="csvInput" style={{ display: "block" }}>
           Enter CSV File
         </label>
@@ -291,7 +429,7 @@ const App = () => {
           {error ? error : data.map((col,
             idx) => <div key={idx}>{col}</div>)}
         </div>
-      </div>
+      </div> */}
 
       <div className="Tools">
         <div className="Dates">
