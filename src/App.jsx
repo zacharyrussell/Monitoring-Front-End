@@ -55,6 +55,10 @@ const App = () => {
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
   ]);
 
+  const [curQueryTableData, setCurQueryTableData] = useState([
+    { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", WholeText: "", Keywords: ""},
+  ]);
+
   const [curCities, setCurCities] = useState([{ City: "" }])
   var parsedData = [
     { Date: "", Location: "", Meeting: "", DocTitle: "", PDF: "", Link: "", Keywords: "" },
@@ -103,6 +107,7 @@ const App = () => {
     reader.onload = async ({ target }) => {
       const csv = Papa.parse(target.result, { header: true });
       parsedData = csv?.data;
+      query()
       setTableData(parsedData)
       setCurTableData(parsedData)
       setCurSearchTableData(parsedData)
@@ -172,8 +177,49 @@ const App = () => {
     return month + "/" + day + "/" + year
   }
 
+  function query(){
+    console.log("Running Query")
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Basic emFjaDpwaG9iaWNoaXBwbzQzMQ==");
+
+    var raw = JSON.stringify({
+        "operation": "search_by_value",
+        "schema": "dev",
+        "table": "agendas",
+        "search_attribute": "date",
+        "search_value": "*",
+        "get_attributes": [
+            "id",
+            "date",
+            "doctitle",
+            "keywords",
+            "link",
+            "location",
+            "meeting",
+            "pdf",
+            "wholeText"
+        ]
+    });
+
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+    console.log("Fetching")
+    fetch("https://agenda-1-agendas.harperdbcloud.com", requestOptions)
+      .then(response => response.text())
+      .then(result => console.log(result))
+      .catch(error => console.log('error', error));
+    console.log("Finished")
+    // setCurQueryTableData(JSON.parse(result))
+    // const arr = JSON.parse(result)
+    // console.log(curQueryTableData)
+  }
+
   function videoColDisplay(link) {
-    console.log(link)
     if (link == "None") {
       return ""
     }
